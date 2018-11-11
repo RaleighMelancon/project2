@@ -49,6 +49,7 @@ class Application:
         self.asking_num_players = False
         self.num_players = 0
         self.active_player = Player("Player 1", 1)
+        self.pointer = self.active_player
         self.curr_question = Questions()
         self.q_counter = 0
 
@@ -80,14 +81,22 @@ class Application:
         self.panel.place_forget()
 
     def update_score_widget(self):
-        self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
+
+        if ( self.num_players == 1 ):
+            self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
+        if ( self.num_players > 1 ):
+            self.score_widget.config(text= self.pointer.getName() + "'s Turn, Score: " + str(self.pointer.getScore()) + ", Tries Remaining: " + str(self.pointer.getTries()), fg="black")
+            if (self.pointer.getTries() == 1 ):
+                self.score_widget.config(fg="red")
 
     def reset_states(self):
         # self.input = ""
         self.in_game = False
         self.asking_num_players = False
         self.num_players = 0
+        self.players_left = 0  
         self.active_player = Player("Player 1", 1)
+        self.pointer = self.active_player
         self.q_counter = 0
         self.curr_question = Questions()
         self.clear_console()
@@ -133,12 +142,12 @@ class Application:
                     self.send_output("> ")
                 else:
                     # self.start_game()
-
+                    self.players_left = self.num_players
                     if ( self.num_players == 1 ):
                         self.start_game()
                     elif ( self.num_players > 1 ):
-                        self.send_outputln("Multiplayer not yet implemented.")
-                        self.send_output("> ")
+                        # self.send_outputln("Multiplayer not yet implemented.")
+                        # self.send_output("> ")
                         a = self.active_player
                         b=Player("Player 2",2)
                         a.setNext(b)
@@ -160,6 +169,8 @@ class Application:
                                 notagain=False
                             print(tempplayer.getPlayerNum())
                             tempplayer=tempplayer.getNext()
+
+                        self.start_game()
                         
                     # elif ( self.num_players > 1 ):
                     #     i = 1
@@ -200,6 +211,33 @@ class Application:
                                 self.win_sequence()
                         elif ( self.active_player.getTries() == 0 ):
                             self.game_over_sequence()
+            if ( self.num_players > 1 ):
+                if ( self.q_counter <= self.DEFAULT_QUESTIONS ):
+                        # if (self.curr_question.trySolution(self.input)):
+                        result = self.curr_question.trySolution(entry)
+                        self.pointer.update(result, self.curr_question.getPointValue())
+                        self.update_score_widget()
+
+                        print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
+
+                        # if ( self.pointer.getTries() > 0 ):
+                        #     # if ( self.pointer.getTries() > 1 ):
+                        #     #     self.score_widget.config(fg="black")
+                        #     # elif ( self.q_counter >= self.DEFAULT_QUESTIONS ):
+                            #     self.win_sequence()
+                        if ( self.pointer.getPlayerNum() == self.highest_player_num()):
+                            self.get_next_question()
+                        if ( self.pointer.getTries() == 0 and self.players_left > 1):
+                            temp = self.pointer.getNext()
+                            self.pointer.deletePlayer()
+                            self.pointer = temp.getPrev()
+                            self.players_left -= 1
+                            print("highest player number", self.highest_player_num() )
+
+                        print("before moving to next player: ", self.pointer.getPlayerNum())
+                        self.pointer = self.pointer.getNext()
+                        print("after moving to next player: ", self.pointer.getPlayerNum())
+                        self.update_score_widget()
 
 
             # if ( self.input == "right" ):
@@ -210,6 +248,15 @@ class Application:
             #     self.win_sequence()
 
     ''' ------- TITLE SCREEN FUNCTIONS -------- '''
+    def highest_player_num(self):
+        maximum = 0
+        tempplayer = self.active_player
+        while ( maximum < tempplayer.getPlayerNum() ):
+           maximum = tempplayer.getPlayerNum()
+           print(tempplayer.getPlayerNum())
+           tempplayer=tempplayer.getNext()
+
+        return maximum
 
     def title_screen(self):
         # self.panel.pack(side = "top", anchor="n", fill = "both", expand="yes")
@@ -317,9 +364,8 @@ class Application:
         self.master.after(3000, self.send_outputln("Loading security questions..."))
         self.clear_console()
         self.enable_entry_field()
-
-        if ( self.num_players == 1 ):
-            self.get_next_question()
+        self.update_score_widget()
+        self.get_next_question()
 
     def get_next_question(self):
         self.clear_console()
