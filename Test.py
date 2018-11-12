@@ -265,10 +265,10 @@ class Application:
 
         # set the start button to destroy the title screen when it is clicked.
         # i am still working out the logic for what i want to happen next.
-        self.start_button = Button(text="Start Game", command=lambda: self.oh_no_sequence())
-        self.skip_button = Button(text="Skip to Game", command=lambda: [self.unload_title_screen(), self.player_start_screen()])
-        self.start_button.pack(side=BOTTOM, anchor="s", ipadx=5, ipady=5, pady=10)
-        #self.skip_button.pack(side=BOTTOM, anchor="sw", ipadx=5, ipady=5, pady=10)
+        self.start_button = Button(text="Play Cutscene", command=lambda: self.oh_no_sequence())
+        self.skip_button = Button(text="Start Game", command=lambda: [self.unload_title_screen(), self.player_start_screen()])
+        self.start_button.pack(side=LEFT, anchor="se", ipadx=5, ipady=5, padx=10, pady=10)
+        self.skip_button.pack(side=RIGHT, anchor="sw", ipadx=5, ipady=5, padx=10, pady=10)
         # self.img = ImageTk.PhotoImage(Image.open(INSTALL_DIR + "home.png"))
         # #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
         # self.panel = Label(self.master, image = self.img, bg = "black")
