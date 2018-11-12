@@ -15,6 +15,7 @@ class Application:
         self.VERSION = 1.0
         self.PROGRAM_TITLE = "Hack Your Boss: Trivia Edition, v" + str(self.VERSION)
         self.DEFAULT_QUESTIONS = 9
+        self.WINNING_SCORE = 70
 
         # instantiate the main game window
         self.master.geometry("800x600")
@@ -52,6 +53,7 @@ class Application:
         self.pointer = self.active_player
         self.curr_question = Questions()
         self.q_counter = 0
+        self.winners = []
 
         ''' ----------------------------------- '''
 
@@ -65,7 +67,7 @@ class Application:
         self.unload_console()
 
     def program(self):
-        #self.boot_os_sequence()
+        self.boot_os_sequence()
         self.title_screen()
 
     def update_scene(self, milsec, filename):
@@ -82,12 +84,13 @@ class Application:
 
     def update_score_widget(self):
 
-        if ( self.num_players == 1 ):
-            self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
-        if ( self.num_players > 1 ):
-            self.score_widget.config(text= self.pointer.getName() + "'s Turn, Score: " + str(self.pointer.getScore()) + ", Tries Remaining: " + str(self.pointer.getTries()), fg="black")
-            if (self.pointer.getTries() == 1 ):
-                self.score_widget.config(fg="red")
+        if ( self.in_game ):
+            if ( self.num_players == 1 ):
+                self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
+            if ( self.num_players > 1 ):
+                self.score_widget.config(text= self.pointer.getName() + "'s Turn, Score: " + str(self.pointer.getScore()) + ", Tries Remaining: " + str(self.pointer.getTries()), bg="lightgray", fg="black")
+                if (self.pointer.getTries() == 1 ):
+                    self.score_widget.config(fg="red")
 
     def reset_states(self):
         # self.input = ""
@@ -98,6 +101,7 @@ class Application:
         self.active_player = Player("Player 1", 1)
         self.pointer = self.active_player
         self.q_counter = 0
+        self.winners = []
         self.curr_question = Questions()
         self.clear_console()
         self.score_widget.config(text="Score: " + str(0) + ", Tries Remaining: " + str(3), fg="black", bg="lightgray")
@@ -212,33 +216,46 @@ class Application:
                         elif ( self.active_player.getTries() == 0 ):
                             self.game_over_sequence()
             if ( self.num_players > 1 ):
-                if ( self.q_counter <= self.DEFAULT_QUESTIONS ):
-                        # if (self.curr_question.trySolution(self.input)):
-                        result = self.curr_question.trySolution(entry)
-                        self.pointer.update(result, self.curr_question.getPointValue())
-                        self.update_score_widget()
+                if ( self.q_counter >= self.DEFAULT_QUESTIONS ):
+                    #or len(self.winners) > 0
+                    self.win_sequence()
+                else:
+                    if ( self.q_counter <= self.DEFAULT_QUESTIONS ):
+                            # if (self.curr_question.trySolution(self.input)):
+                            result = self.curr_question.trySolution(entry)
+                            self.pointer.update(result, self.curr_question.getPointValue())
+                            self.update_score_widget()
 
-                        print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
+                            print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
 
-                        # if ( self.pointer.getTries() > 0 ):
-                        #     # if ( self.pointer.getTries() > 1 ):
-                        #     #     self.score_widget.config(fg="black")
-                        #     # elif ( self.q_counter >= self.DEFAULT_QUESTIONS ):
-                            #     self.win_sequence()
-                        if ( self.pointer.getPlayerNum() == self.highest_player_num()):
-                            self.get_next_question()
-                        if ( self.pointer.getTries() == 0 and self.players_left > 1):
-                            temp = self.pointer.getNext()
-                            self.pointer.deletePlayer()
-                            self.pointer = temp.getPrev()
-                            self.players_left -= 1
-                            print("highest player number", self.highest_player_num() )
+                            # if ( self.pointer.getTries() > 0 ):
+                            #     # if ( self.pointer.getTries() > 1 ):
+                            #     #     self.score_widget.config(fg="black")
+                            #     # elif ( self.q_counter >= self.DEFAULT_QUESTIONS ):
+                                #     self.win_sequence()
+                            if ( self.pointer.getScore() >= self.WINNING_SCORE ):
+                                self.add_winners(self.pointer)
+                            if ( self.pointer.getPlayerNum() == self.highest_player_num()):
+                                if ( len(self.winners) > 0 ):
+                                    self.win_sequence()
+                                self.get_next_question()
+                            if ( self.pointer.getTries() == 0 and self.players_left > 1):
+                                temp = self.pointer.getNext()
+                                self.score_widget.config(text=self.pointer.getName() + " was knocked out!", bg="red", fg="white")
+                                self.master.update()
+                                self.pointer.deletePlayer()
+                                self.pointer = temp.getPrev()
+                                self.players_left -= 1
+                                print("highest player number", self.highest_player_num() )
+                                self.master.after(3000, self.update_score_widget())
+                            if ( self.players_left == 1 and self.pointer.getTries() == 0 ):
+                                self.game_over_sequence()
 
-                        print("before moving to next player: ", self.pointer.getPlayerNum())
-                        self.pointer = self.pointer.getNext()
-                        print("after moving to next player: ", self.pointer.getPlayerNum())
-                        self.update_score_widget()
 
+                            print("before moving to next player: ", self.pointer.getPlayerNum())
+                            self.pointer = self.pointer.getNext()
+                            print("after moving to next player: ", self.pointer.getPlayerNum())
+                            self.update_score_widget()
 
             # if ( self.input == "right" ):
             #     self.send_outputln("we are in game and this would be a correct answer")
@@ -397,15 +414,17 @@ class Application:
         # self.load_os_sequence()
         # self.instr_and_playernum_screen()
 
+    def add_winners(self, player):
+        self.winners.append(player)
 
     # accounts for ties if there is more than one player
-    def get_winners(self):
-        winners = []
+    # def get_winners(self):
+    #     # winners = []
 
-        for i in range(self.num_players):
-            winners.append(i+1)
+    #     # for i in range(self.num_players):
+    #     #     winners.append(i+1)
 
-        return winners
+    #     return self.winners
 
     def get_losers(self):
         losers = []
@@ -445,17 +464,16 @@ class Application:
             res_str += "You"
             #self.send_output("You")
         elif ( self.num_players > 1 ):
-            winner = self.get_winners()
-            if ( len(winner) == 1 ):
-                res_str += "Player " + str(winner[0])
+            if ( len(self.winners) == 1 ):
+                res_str += "Player " + str(self.winners[0].getPlayerNum())
                 #self.send_output("Player " + str(winner[0]))
-            elif( len(winner) > 1 ):
+            elif( len(self.winners) > 1 ):
                 res_str += "Player(s) "
                 #self.send_output("Player(s) ")
-                for i in range(len(winner)-1):
-                     res_str += str(winner[i]) + ", "
+                for i in range(len(self.winners)-1):
+                     res_str += str(self.winners[i].getPlayerNum()) + ", "
                      #self.send_output(str(winner[i]) + ", ")
-                res_str += "and " + str(winner[len(winner)-1])
+                res_str += "and " + str(self.winners[len(self.winners)-1].getPlayerNum())
                 #self.send_output(str(winner[len(winner)-1]))
         res_str += " won!"
         
