@@ -167,31 +167,14 @@ class Application:
                         c.setNext(a)
                         a.setPrev(b)
                         tempplayer=a
-                        notagain=True
-                        while notagain:
-                            if (tempplayer.getPlayerNum()==self.num_players):
-                                notagain=False
-                            print(tempplayer.getPlayerNum())
-                            tempplayer=tempplayer.getNext()
+                        # notagain=True
+                        # while notagain:
+                        #     if (tempplayer.getPlayerNum()==self.num_players):
+                        #         notagain=False
+                        #     print(tempplayer.getPlayerNum())
+                        #     tempplayer=tempplayer.getNext()
 
                         self.start_game()
-                        
-                    # elif ( self.num_players > 1 ):
-                    #     i = 1
-                    #     while (i <= self.num_players):
-                    #         new_player = Player("Player " + str(i), i)
-                    #         new_player.setPrev(self.active_player)
-                    #         self.active_player.setNext(new_player)
-                    #         i+=1
-
-                    #     i = 1
-                    #     temp = self.active_player
-                    #     while (i <= self.num_players):
-                    #         print( temp.getName())
-                    #         temp = temp.getNext()
-                    #         i+=1
-                    
-
                         
             elif ( not self.asking_num_players ):
                 if (entry == "start"):
@@ -226,7 +209,7 @@ class Application:
                             self.pointer.update(result, self.curr_question.getPointValue())
                             self.update_score_widget()
 
-                            print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
+                            # print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
 
                             # if ( self.pointer.getTries() > 0 ):
                             #     # if ( self.pointer.getTries() > 1 ):
@@ -246,15 +229,15 @@ class Application:
                                 self.pointer.deletePlayer()
                                 self.pointer = temp.getPrev()
                                 self.players_left -= 1
-                                print("highest player number", self.highest_player_num() )
+                                #print("highest player number", self.highest_player_num() )
                                 self.master.after(3000, self.update_score_widget())
                             if ( self.players_left == 1 and self.pointer.getTries() == 0 ):
                                 self.game_over_sequence()
 
 
-                            print("before moving to next player: ", self.pointer.getPlayerNum())
+                            #print("before moving to next player: ", self.pointer.getPlayerNum())
                             self.pointer = self.pointer.getNext()
-                            print("after moving to next player: ", self.pointer.getPlayerNum())
+                            #print("after moving to next player: ", self.pointer.getPlayerNum())
                             self.update_score_widget()
 
             # if ( self.input == "right" ):
@@ -270,7 +253,7 @@ class Application:
         tempplayer = self.active_player
         while ( maximum < tempplayer.getPlayerNum() ):
            maximum = tempplayer.getPlayerNum()
-           print(tempplayer.getPlayerNum())
+           #print(tempplayer.getPlayerNum())
            tempplayer=tempplayer.getNext()
 
         return maximum
@@ -284,8 +267,8 @@ class Application:
         # i am still working out the logic for what i want to happen next.
         self.start_button = Button(text="Start Game", command=lambda: self.oh_no_sequence())
         self.skip_button = Button(text="Skip to Game", command=lambda: [self.unload_title_screen(), self.player_start_screen()])
-        self.start_button.pack(side=BOTTOM, anchor="se", ipadx=5, ipady=5, pady=10)
-        self.skip_button.pack(side=BOTTOM, anchor="sw", ipadx=5, ipady=5, pady=10)
+        self.start_button.pack(side=BOTTOM, anchor="s", ipadx=5, ipady=5, pady=10)
+        #self.skip_button.pack(side=BOTTOM, anchor="sw", ipadx=5, ipady=5, pady=10)
         # self.img = ImageTk.PhotoImage(Image.open(INSTALL_DIR + "home.png"))
         # #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
         # self.panel = Label(self.master, image = self.img, bg = "black")
