@@ -156,7 +156,7 @@ class Application:
                         b=Player("Player 2",2)
                         a.setNext(b)
                         b.setPrev(a)
-                        c=None
+                        c=b
                         tempprime="Player "
                         for i in range(self.num_players-2):
                             temp=tempprime+str(i+3)
