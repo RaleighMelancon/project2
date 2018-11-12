@@ -18,6 +18,7 @@ class Application:
         self.VERSION = 1.0
         self.PROGRAM_TITLE = "Hack Your Boss: Trivia Edition, v" + str(self.VERSION)
         self.DEFAULT_QUESTIONS = 9
+        self.WINNING_SCORE = 70
 
         # instantiate the main game window
         self.master.geometry("800x600")
@@ -52,8 +53,10 @@ class Application:
         self.asking_num_players = False
         self.num_players = 0
         self.active_player = Player("Player 1", 1)
+        self.pointer = self.active_player
         self.curr_question = Questions()
         self.q_counter = 0
+        self.winners = []
 
         ''' ----------------------------------- '''
 
@@ -67,7 +70,7 @@ class Application:
         self.unload_console()
 
     def program(self):
-        #self.boot_os_sequence()
+        self.boot_os_sequence()
         self.title_screen()
 
     def update_scene(self, milsec, filename):
@@ -83,15 +86,25 @@ class Application:
         self.panel.place_forget()
 
     def update_score_widget(self):
-        self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
+
+        if ( self.in_game ):
+            if ( self.num_players == 1 ):
+                self.score_widget.config(text="Score: " + str(self.active_player.getScore()) + ", Tries Remaining: " + str(self.active_player.getTries()))
+            if ( self.num_players > 1 ):
+                self.score_widget.config(text= self.pointer.getName() + "'s Turn, Score: " + str(self.pointer.getScore()) + ", Tries Remaining: " + str(self.pointer.getTries()), bg="lightgray", fg="black")
+                if (self.pointer.getTries() == 1 ):
+                    self.score_widget.config(fg="red")
 
     def reset_states(self):
         # self.input = ""
         self.in_game = False
         self.asking_num_players = False
         self.num_players = 0
+        self.players_left = 0  
         self.active_player = Player("Player 1", 1)
+        self.pointer = self.active_player
         self.q_counter = 0
+        self.winners = []
         self.curr_question = Questions()
         self.clear_console()
         self.score_widget.config(text="Score: " + str(0) + ", Tries Remaining: " + str(3), fg="black", bg="lightgray")
@@ -106,12 +119,12 @@ class Application:
     #     self.input = self.entry_field.get().lower()
     #     self.entry_field.delete(0, END)
     #     self.entry_field.focus()
-    #     self.app.check_input()
+    #     self.check_input()
 
     def submit_input(self, entry):
         self.entry_field.delete(0, END)
         self.entry_field.focus()
-        self.app.check_input(entry)
+        self.check_input(entry)
 
     def check_input(self, entry):
         if ( entry == "about" ):
@@ -136,27 +149,35 @@ class Application:
                     self.send_output("> ")
                 else:
                     # self.start_game()
-
+                    self.players_left = self.num_players
                     if ( self.num_players == 1 ):
                         self.start_game()
                     elif ( self.num_players > 1 ):
-                        self.send_outputln("Multiplayer not yet implemented.")
-                        self.send_output("> ")
-                    # elif ( self.num_players > 1 ):
-                    #     i = 1
-                    #     while (i <= self.num_players):
-                    #         new_player = Player("Player " + str(i), i)
-                    #         new_player.setPrev(self.active_player)
-                    #         self.active_player.setNext(new_player)
-                    #         i+=1
+                        # self.send_outputln("Multiplayer not yet implemented.")
+                        # self.send_output("> ")
+                        a = self.active_player
+                        b=Player("Player 2",2)
+                        a.setNext(b)
+                        b.setPrev(a)
+                        c=b
+                        tempprime="Player "
+                        for i in range(self.num_players-2):
+                            temp=tempprime+str(i+3)
+                            c=Player(temp,i+3)
+                            b.setNext(c)
+                            c.setPrev(b)
+                            b=c
+                        c.setNext(a)
+                        a.setPrev(b)
+                        tempplayer=a
+                        # notagain=True
+                        # while notagain:
+                        #     if (tempplayer.getPlayerNum()==self.num_players):
+                        #         notagain=False
+                        #     print(tempplayer.getPlayerNum())
+                        #     tempplayer=tempplayer.getNext()
 
-                    #     i = 1
-                    #     temp = self.active_player
-                    #     while (i <= self.num_players):
-                    #         print( temp.getName())
-                    #         temp = temp.getNext()
-                    #         i+=1
-
+                        self.start_game()
                         
             elif ( not self.asking_num_players ):
                 if (entry == "start"):
@@ -180,7 +201,47 @@ class Application:
                                 self.win_sequence()
                         elif ( self.active_player.getTries() == 0 ):
                             self.game_over_sequence()
+            if ( self.num_players > 1 ):
+                if ( self.q_counter >= self.DEFAULT_QUESTIONS ):
+                    #or len(self.winners) > 0
+                    self.win_sequence()
+                else:
+                    if ( self.q_counter <= self.DEFAULT_QUESTIONS ):
+                            # if (self.curr_question.trySolution(self.input)):
+                            result = self.curr_question.trySolution(entry)
+                            self.pointer.update(result, self.curr_question.getPointValue())
+                            self.update_score_widget()
 
+                            # print(str(self.pointer.getPlayerNum()) + ", total players: " + str(self.players_left))
+
+                            # if ( self.pointer.getTries() > 0 ):
+                            #     # if ( self.pointer.getTries() > 1 ):
+                            #     #     self.score_widget.config(fg="black")
+                            #     # elif ( self.q_counter >= self.DEFAULT_QUESTIONS ):
+                                #     self.win_sequence()
+                            if ( self.pointer.getScore() >= self.WINNING_SCORE ):
+                                self.add_winners(self.pointer)
+                            if ( self.pointer.getPlayerNum() == self.highest_player_num()):
+                                if ( len(self.winners) > 0 ):
+                                    self.win_sequence()
+                                self.get_next_question()
+                            if ( self.pointer.getTries() == 0 and self.players_left > 1):
+                                temp = self.pointer.getNext()
+                                self.score_widget.config(text=self.pointer.getName() + " was knocked out!", bg="red", fg="white")
+                                self.master.update()
+                                self.pointer.deletePlayer()
+                                self.pointer = temp.getPrev()
+                                self.players_left -= 1
+                                #print("highest player number", self.highest_player_num() )
+                                self.master.after(3000, self.update_score_widget())
+                            if ( self.players_left == 1 and self.pointer.getTries() == 0 ):
+                                self.game_over_sequence()
+
+
+                            #print("before moving to next player: ", self.pointer.getPlayerNum())
+                            self.pointer = self.pointer.getNext()
+                            #print("after moving to next player: ", self.pointer.getPlayerNum())
+                            self.update_score_widget()
 
             # if ( self.input == "right" ):
             #     self.send_outputln("we are in game and this would be a correct answer")
@@ -190,6 +251,15 @@ class Application:
             #     self.win_sequence()
 
     ''' ------- TITLE SCREEN FUNCTIONS -------- '''
+    def highest_player_num(self):
+        maximum = 0
+        tempplayer = self.active_player
+        while ( maximum < tempplayer.getPlayerNum() ):
+           maximum = tempplayer.getPlayerNum()
+           #print(tempplayer.getPlayerNum())
+           tempplayer=tempplayer.getNext()
+
+        return maximum
 
     def title_screen(self):
         # self.panel.pack(side = "top", anchor="n", fill = "both", expand="yes")
@@ -200,8 +270,8 @@ class Application:
         # i am still working out the logic for what i want to happen next.
         self.start_button = Button(text="Start Game", command=lambda: self.oh_no_sequence())
         self.skip_button = Button(text="Skip to Game", command=lambda: [self.unload_title_screen(), self.player_start_screen()])
-        self.start_button.pack(side=BOTTOM, anchor="se", ipadx=5, ipady=5, pady=10)
-        self.skip_button.pack(side=BOTTOM, anchor="sw", ipadx=5, ipady=5, pady=10)
+        self.start_button.pack(side=BOTTOM, anchor="s", ipadx=5, ipady=5, pady=10)
+        #self.skip_button.pack(side=BOTTOM, anchor="sw", ipadx=5, ipady=5, pady=10)
         # self.img = ImageTk.PhotoImage(Image.open(INSTALL_DIR + "home.png"))
         # #The Label widget is a standard Tkinter widget used to display a text or image on the screen.
         # self.panel = Label(self.master, image = self.img, bg = "black")
@@ -297,9 +367,8 @@ class Application:
         self.master.after(3000, self.send_outputln("Loading security questions..."))
         self.clear_console()
         self.enable_entry_field()
-
-        if ( self.num_players == 1 ):
-            self.get_next_question()
+        self.update_score_widget()
+        self.get_next_question()
 
     def get_next_question(self):
         self.clear_console()
@@ -331,15 +400,17 @@ class Application:
         # self.load_os_sequence()
         # self.instr_and_playernum_screen()
 
+    def add_winners(self, player):
+        self.winners.append(player)
 
     # accounts for ties if there is more than one player
-    def get_winners(self):
-        winners = []
+    # def get_winners(self):
+    #     # winners = []
 
-        for i in range(self.num_players):
-            winners.append(i+1)
+    #     # for i in range(self.num_players):
+    #     #     winners.append(i+1)
 
-        return winners
+    #     return self.winners
 
     def get_losers(self):
         losers = []
@@ -379,17 +450,16 @@ class Application:
             res_str += "You"
             #self.send_output("You")
         elif ( self.num_players > 1 ):
-            winner = self.get_winners()
-            if ( len(winner) == 1 ):
-                res_str += "Player " + str(winner[0])
+            if ( len(self.winners) == 1 ):
+                res_str += "Player " + str(self.winners[0].getPlayerNum())
                 #self.send_output("Player " + str(winner[0]))
-            elif( len(winner) > 1 ):
+            elif( len(self.winners) > 1 ):
                 res_str += "Player(s) "
                 #self.send_output("Player(s) ")
-                for i in range(len(winner)-1):
-                     res_str += str(winner[i]) + ", "
+                for i in range(len(self.winners)-1):
+                     res_str += str(self.winners[i].getPlayerNum()) + ", "
                      #self.send_output(str(winner[i]) + ", ")
-                res_str += "and " + str(winner[len(winner)-1])
+                res_str += "and " + str(self.winners[len(self.winners)-1].getPlayerNum())
                 #self.send_output(str(winner[len(winner)-1]))
         res_str += " won!"
         
